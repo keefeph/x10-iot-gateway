@@ -1,0 +1,119 @@
+# X10 IOT Gateway V3.02 - Home Assistant package (optional).
+# Requires packages enabled in configuration.yaml:
+#   homeassistant:
+#     packages: !include_dir_named packages
+# Copy to /config/packages/x10_manager.yaml and restart Home Assistant.
+#
+# The gateway already publishes a registration panel via MQTT discovery
+# (device "ESP32 PSC05 X10 Controller"): set House Code + Unit Code (or pick a
+# Seen Address), choose a model and press "X10 Register Device". This package
+# is optional; it adds rename / forget / list scripts and a notification.
+input_text:
+  x10_manage_address:
+    name: X10 address
+    max: 3
+    initial: C3
+  x10_manage_name:
+    name: X10 device name
+    max: 40
+    initial: Living Room Lamp
+input_select:
+  x10_manage_model:
+    name: X10 model
+    options:
+      - "7246 - Appliance Module"
+      - "AMT-101 - Appliance Module"
+      - "AMT-103 - Appliance Module"
+      - "HD11A - Appliance Module"
+      - "HD465 - Lamp Module"
+      - "HD466 - 3-Pin Appliance Module"
+      - "HD501 - Wall Switch"
+      - "LM15A-C - Socket Rocket Lamp Module"
+      - "LM465 - Lamp Module"
+      - "PMS02 - Motion Sensor"
+      - "SR227 - SuperSocket Outlet"
+      - "TM523 - Transceiver Module"
+      - "TM751 - Transceiver Module"
+      - "UM506 - Universal Module"
+      - "WS12A - Decorator Dimmer Switch"
+      - "WS467 - Wall Switch Module"
+    initial: "LM465 - Lamp Module"
+  x10_manage_type:
+    name: X10 entity type
+    options:
+      - Model default
+      - DIMMER
+      - LIGHT
+      - SWITCH
+      - SENSOR
+      - MOMENTARY
+    initial: Model default
+script:
+  x10_add_module:
+    alias: X10 - Add module
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.x10_manage_address') | upper | trim | regex_match('^[A-P][0-9]{1,2}$') and (states('input_text.x10_manage_address') | upper | trim)[1:] | int(0) >= 1 and (states('input_text.x10_manage_address') | upper | trim)[1:] | int(0) <= 16 }}"
+      - action: mqtt.publish
+        data:
+          topic: x10/manage/set
+          retain: false
+          payload: >-
+            ADD|{{ states('input_text.x10_manage_address') | upper | trim }}|{{ states('input_text.x10_manage_name') | trim }}|{{ states('input_select.x10_manage_model').split(' ')[0] }}{% if states('input_select.x10_manage_type') != 'Model default' %}|{{ states('input_select.x10_manage_type') }}{% endif %}
+  x10_rename_module:
+    alias: X10 - Rename module
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.x10_manage_address') | upper | trim | regex_match('^[A-P][0-9]{1,2}$') and (states('input_text.x10_manage_address') | upper | trim)[1:] | int(0) >= 1 and (states('input_text.x10_manage_address') | upper | trim)[1:] | int(0) <= 16 }}"
+      - action: mqtt.publish
+        data:
+          topic: x10/manage/set
+          retain: false
+          payload: >-
+            RENAME|{{ states('input_text.x10_manage_address') | upper | trim }}|{{ states('input_text.x10_manage_name') | trim }}
+  x10_remove_module:
+    alias: X10 - Remove module
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.x10_manage_address') | upper | trim | regex_match('^[A-P][0-9]{1,2}$') and (states('input_text.x10_manage_address') | upper | trim)[1:] | int(0) >= 1 and (states('input_text.x10_manage_address') | upper | trim)[1:] | int(0) <= 16 }}"
+      - action: mqtt.publish
+        data:
+          topic: x10/manage/set
+          retain: false
+          payload: "REMOVE|{{ states('input_text.x10_manage_address') | upper | trim }}"
+  x10_forget_seen:
+    alias: X10 - Forget seen (unregistered) address
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.x10_manage_address') | upper | trim | regex_match('^[A-P][0-9]{1,2}$') }}"
+      - action: mqtt.publish
+        data:
+          topic: x10/manage/set
+          retain: false
+          payload: "FORGET|{{ states('input_text.x10_manage_address') | upper | trim }}"
+  x10_list_modules:
+    alias: X10 - List modules
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: x10/manage/set
+          retain: false
+          payload: LIST
+
+# Optional: notify when the gateway sees a new unregistered X10 address.
+automation:
+  - id: x10_new_unregistered_address
+    alias: X10 - New unregistered address seen
+    triggers:
+      - trigger: mqtt
+        topic: x10/event
+        payload: "SEEN_NEW"
+        value_template: "{{ value.split(' ')[0] }}"
+    actions:
+      - action: persistent_notification.create
+        data:
+          title: New X10 address seen
+          message: >-
+            Another controller is using X10 address {{ trigger.payload.split(' ')[1] }}.
+            Register it from the "ESP32 PSC05 X10 Controller" device
+            (X10 Register: Seen Address / Model / Register Device).

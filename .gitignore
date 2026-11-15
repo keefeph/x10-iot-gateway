@@ -1,0 +1,7 @@
+# Wi-Fi / MQTT credentials: copy x10_secrets.example.h to x10_secrets.h locally.
+x10_secrets.h
+**/x10_secrets.h
+
+# OS / editor clutter
+.DS_Store
+*.swp

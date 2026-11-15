@@ -1,0 +1,30 @@
+# Dashboard card (Edit dashboard -> Add card -> Manual) for the gateway's
+# built-in registration panel. Entity ids below are HA's defaults; adjust if
+# your installation named them differently.
+type: entities
+title: X10 Device Registration
+entities:
+  - entity: select.esp32_psc05_x10_controller_x10_register_seen_address
+    name: Seen address (optional shortcut)
+  - entity: select.esp32_psc05_x10_controller_x10_register_house_code
+    name: House code
+  - entity: select.esp32_psc05_x10_controller_x10_register_unit_code
+    name: Unit code
+  - entity: select.esp32_psc05_x10_controller_x10_register_model
+    name: Model
+  - entity: select.esp32_psc05_x10_controller_x10_register_type
+    name: Type override
+  - entity: text.esp32_psc05_x10_controller_x10_register_name
+    name: Name
+  - entity: button.esp32_psc05_x10_controller_x10_register_device
+    name: Register
+  - entity: button.esp32_psc05_x10_controller_x10_forget_seen_address
+    name: Forget seen address
+  - type: divider
+  - entity: select.esp32_psc05_x10_controller_x10_remove_registered_device
+    name: Registered device
+  - entity: button.esp32_psc05_x10_controller_x10_remove_device
+    name: Remove
+  - type: divider
+  - entity: sensor.esp32_psc05_x10_controller_x10_registration_result
+    name: Result
