@@ -40,7 +40,7 @@ GPIO34 and GPIO35 are input-only and have no internal pull-ups.
 
 ### TX driver
 
-The 3.3 V GPIO25 can't switch the 5 V PNP stage directly, so a 2N7000 sits in front of the O.E.M. transmit circuit from page 11 of the PL513/TW523 technical note:
+The PSC05's TX input (pin 4) needs a 5 V logic level: at least 4 V for a "1", per the [PL513 / TW523 Technical Note](https://cdn.shopify.com/s/files/1/2279/4329/files/PL513_and_TW523_technical_notes.pdf?13630872876378945203). This build uses the note's page 11 "Typical O.E.M. Connection Diagram" transmit circuit (a PNP stage, here an NTE129). The ESP32's 3.3 V GPIO25 can't switch that 5 V PNP stage directly, so a **2N7000 N-channel MOSFET** is added in front of it to interface the 3.3 V GPIO to the 5 V O.E.M. transmit line:
 
 ```
 GPIO25 ──300Ω──┬── 2N7000 gate          2N7000 source ── GND
@@ -173,6 +173,11 @@ To switch an existing UM506 to MOMENTARY, remove it and add it again, for exampl
 Flash V3.00 and your NVS registry migrates automatically. Existing entries keep their type (dimmer or switch), with no model set. Their unique IDs and discovery topics are unchanged, so the Home Assistant entities stay the same. To add a model to an existing entry, remove it and register it again.
 
 V2.24 cleared `homeassistant/switch/esp32_psc05_B1/config` on every connect as a one-time migration. V3.00 drops that step.
+
+## References
+
+- [X10 PL513 / TW523 Power Line Interface Technical Note](https://cdn.shopify.com/s/files/1/2279/4329/files/PL513_and_TW523_technical_notes.pdf?13630872876378945203) (Rev 2.4): X10 code format, transmit and receive timing, RJ11 pin-out, electrical characteristics and the page 11 O.E.M. connection diagram. The PSC05 is the current TW523-compatible two-way interface.
+- [X10 product manuals](https://thex10shop.com/pages/x10-instruction-manuals) (TheX10Shop): source of the module names marked † in the model table.
 
 ## License
 
